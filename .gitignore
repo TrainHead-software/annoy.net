@@ -1,0 +1,52 @@
+# Auto-generated VS/JetBrains project files
+.vscode/
+.idea/
+*.code-workspace
+
+# Unity cache
+*.log
+*.bak
+*.tmp
+*.temp
+*.unitypackage
+.DS_Store
+
+# Rider
+*.DotSettings.user
+*.sln.iml
+
+# ---- CLion / CMake ----
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+Makefile
+CTestTestfile.cmake
+cmake_install.cmake
+compile_commands.json
+Testing/
+build/
+*.cbp
+*.ninja
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+*.exe
+
+# ---- OS-specific ----
+*.swp
+*.swo
+*.swn
+*.orig
+*.rej
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ---- Binaries / Annoy index files ----
+*.tree
+*.bin
+*.index
