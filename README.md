@@ -1,4 +1,4 @@
-# Annoy.NET — C API Wrapper for Spotify Annoy
+# Annoy.NET — C API / C# (unity) Wrapper for Spotify Annoy
 
 ## License
 This project includes and wraps [Spotify Annoy](https://github.com/spotify/annoy), a C++ library for approximate nearest neighbors. 
