@@ -11,10 +11,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+            fetch-depth: 0
 
       - name: Ensure Annoy source (spotify/annoy) in ./annoy
         shell: bash
@@ -23,6 +23,10 @@ jobs:
             git clone https://github.com/spotify/annoy.git annoy
           fi
           test -d "./annoy/src" || { echo "Annoy src not found at ./annoy/src"; exit 1; }
+          echo "Annoy source contents (first 20 entries):"
+          ls -la ./annoy | head -n 20
+          echo "Annoy/src contents (first 20 entries):"
+          ls -la ./annoy/src | head -n 20
 
       - name: Configure (CMake, Visual Studio 2022, x64, Release)
         run: >
@@ -32,37 +36,29 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
 
       - name: Build (Release)
-        run: cmake --build build --config Release --verbose
+        run: cmake --build build --config Release --parallel --verbose
 
       - name: Run test_annoy.exe
         shell: pwsh
         run: |
-          # Ищем каталог с бинарями (для VS — build\Release)
-          $binDirs = @(
-            "build\Release",
-            "build"
-          ) | Where-Object { Test-Path $_ }
-
-          if ($binDirs.Count -eq 0) {
-            Write-Error "No build output directories found."
+          $bin = Join-Path "build" "Release"
+          if (!(Test-Path $bin)) {
+            Write-Error "Build output directory not found: $bin"
             exit 1
           }
-
-          $foundExe = $false
-          foreach ($d in $binDirs) {
-            $exe = Join-Path $d "test_annoy.exe"
-            if (Test-Path $exe) {
-              $env:PATH = "$(Resolve-Path $d);$env:PATH"
-              & $exe
-              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-              $foundExe = $true
-              break
-            }
-          }
-          if (-not $foundExe) {
-            Write-Error "test_annoy.exe not found in expected locations."
+          $dll = Join-Path $bin "annoy_c.dll"
+          $exe = Join-Path $bin "test_annoy.exe"
+          if (!(Test-Path $dll)) {
+            Write-Error "DLL not found: $dll"
             exit 1
           }
+          if (!(Test-Path $exe)) {
+            Write-Error "Executable not found: $exe"
+            exit 1
+          }
+          $env:PATH = "$($bin);$env:PATH"
+          & $exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Upload artifacts (DLL, LIB, PDB, EXE)
         uses: actions/upload-artifact@v4
@@ -74,7 +70,3 @@ jobs:
             build/Release/annoy_c.lib
             build/Release/annoy_c.pdb
             build/Release/test_annoy.exe
-            build/annoy_c.dll
-            build/annoy_c.lib
-            build/annoy_c.pdb
-            build/test_annoy.exe
