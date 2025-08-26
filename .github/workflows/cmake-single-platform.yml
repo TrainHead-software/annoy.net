@@ -1,0 +1,80 @@
+name: cmake-single-platform
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  build-windows:
+    name: Build Windows x64 (MSVC, Release)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure Annoy source (spotify/annoy) in ./annoy
+        shell: bash
+        run: |
+          if [ ! -d "./annoy" ]; then
+            git clone https://github.com/spotify/annoy.git annoy
+          fi
+          test -d "./annoy/src" || { echo "Annoy src not found at ./annoy/src"; exit 1; }
+
+      - name: Configure (CMake, Visual Studio 2022, x64, Release)
+        run: >
+          cmake -S . -B build
+          -G "Visual Studio 17 2022"
+          -A x64
+          -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build (Release)
+        run: cmake --build build --config Release --verbose
+
+      - name: Run test_annoy.exe
+        shell: pwsh
+        run: |
+          # Ищем каталог с бинарями (для VS — build\Release)
+          $binDirs = @(
+            "build\Release",
+            "build"
+          ) | Where-Object { Test-Path $_ }
+
+          if ($binDirs.Count -eq 0) {
+            Write-Error "No build output directories found."
+            exit 1
+          }
+
+          $foundExe = $false
+          foreach ($d in $binDirs) {
+            $exe = Join-Path $d "test_annoy.exe"
+            if (Test-Path $exe) {
+              $env:PATH = "$(Resolve-Path $d);$env:PATH"
+              & $exe
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+              $foundExe = $true
+              break
+            }
+          }
+          if (-not $foundExe) {
+            Write-Error "test_annoy.exe not found in expected locations."
+            exit 1
+          }
+
+      - name: Upload artifacts (DLL, LIB, PDB, EXE)
+        uses: actions/upload-artifact@v4
+        with:
+          name: annoy_c-windows-x64-Release
+          if-no-files-found: error
+          path: |
+            build/Release/annoy_c.dll
+            build/Release/annoy_c.lib
+            build/Release/annoy_c.pdb
+            build/Release/test_annoy.exe
+            build/annoy_c.dll
+            build/annoy_c.lib
+            build/annoy_c.pdb
+            build/test_annoy.exe
