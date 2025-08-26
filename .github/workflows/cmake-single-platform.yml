@@ -1,0 +1,72 @@
+name: cmake-single-platform
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  build-windows:
+    name: Build Windows x64 (MSVC, Release)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+            fetch-depth: 0
+
+      - name: Ensure Annoy source (spotify/annoy) in ./annoy
+        shell: bash
+        run: |
+          if [ ! -d "./annoy" ]; then
+            git clone https://github.com/spotify/annoy.git annoy
+          fi
+          test -d "./annoy/src" || { echo "Annoy src not found at ./annoy/src"; exit 1; }
+          echo "Annoy source contents (first 20 entries):"
+          ls -la ./annoy | head -n 20
+          echo "Annoy/src contents (first 20 entries):"
+          ls -la ./annoy/src | head -n 20
+
+      - name: Configure (CMake, Visual Studio 2022, x64, Release)
+        run: >
+          cmake -S . -B build
+          -G "Visual Studio 17 2022"
+          -A x64
+          -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build (Release)
+        run: cmake --build build --config Release --parallel --verbose
+
+      - name: Run test_annoy.exe
+        shell: pwsh
+        run: |
+          $bin = Join-Path "build" "Release"
+          if (!(Test-Path $bin)) {
+            Write-Error "Build output directory not found: $bin"
+            exit 1
+          }
+          $dll = Join-Path $bin "annoy_c.dll"
+          $exe = Join-Path $bin "test_annoy.exe"
+          if (!(Test-Path $dll)) {
+            Write-Error "DLL not found: $dll"
+            exit 1
+          }
+          if (!(Test-Path $exe)) {
+            Write-Error "Executable not found: $exe"
+            exit 1
+          }
+          $env:PATH = "$($bin);$env:PATH"
+          & $exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload artifacts (DLL, LIB, PDB, EXE)
+        uses: actions/upload-artifact@v4
+        with:
+          name: annoy_c-windows-x64-Release
+          if-no-files-found: error
+          path: |
+            build/Release/annoy_c.dll
+            build/Release/annoy_c.lib
+            build/Release/annoy_c.pdb
+            build/Release/test_annoy.exe
