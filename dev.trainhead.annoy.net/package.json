@@ -1,0 +1,24 @@
+{
+  "name": "dev.trainhead.annoy.net",
+  "displayName": "annoy.NET",
+  "version": "1.0.1",
+  "unity": "2019.4",
+  "author": {
+    "name": "Mark Tamarov",
+    "email": "7amarov.mark@gmail.com",
+    "url": "https://github.com/TrainHead-software/annoy.net"
+  },
+  "license": "Apache License 2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TrainHead-software/annoy.net.git?path=/dev.trainhead.annoy.net"
+  },
+  "keywords": [
+    "annoy",
+    "spotify",
+    "nearest-neighbor-search",
+    "locality-sensitive-hashing",
+    "approximate-nearest-neighbor-search"
+  ],
+  "description": "Annoy.NET is a C# Wrapper for Spotify's annoy."
+}

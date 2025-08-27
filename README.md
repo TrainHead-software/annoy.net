@@ -1,45 +1,54 @@
-# Annoy.NET — C API / C# (unity) Wrapper for Spotify Annoy
+# Annoy.NET 
+*Annoy.NET* is a C# Wrapper for [Spotify's Annoy](https://github.com/spotify/annoy), it can be used either with Unity or your C# based Application.
 
-## License
-This project includes and wraps [Spotify Annoy](https://github.com/spotify/annoy), a C++ library for approximate nearest neighbors. 
+## Unity Integration
+1. Drag & Drop `annoy.net.unitypackage` into unity editor
+2. Profit!
+
+## Usage
+```csharp
+using System;  
+using UnityEngine;  
+using AnnoyWrapper;  
+  
+public class Test : MonoBehaviour  
+{  
+    void Start()  
+    {
+        IntPtr index = Annoy.Index(512, AnnoyMetric.Angular);  
+        Annoy.AddItem(index, 0, new float[512]);  
+        Annoy.AddItem(index, 1, new float[512]);  
+        Annoy.AddItem(index, 2, new float[512]);  
+        Annoy.Build(index, 10);  
+        Debug.Log(Annoy.GetNItems(index)); // 3  
+        Annoy.Free(index);  
+    }}
+```
 
 ## Setup & Build Instructions
 1. Clone this repository
-```
+
+```sh
 git clone github.com/TrainHead-software/annoy.net
 cd annoy.net
 ```
 
-2. Clone the Annoy source inside this repository
-```
+2. Clone the Annoy source inside project folder
+
+```sh
 git clone https://github.com/spotify/annoy.git
-⚠️ The annoy folder must be placed inside the root directory (next to annoy_clang).
 ```
 
-3. Build the DLL
-Using CMake (MinGW, Ninja, or Visual Studio):
-```
+3. Build the DLL Using CMake (MinGW, Ninja, or Visual Studio):
+
+```sh
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
 ```
 
-## Unity Integration
+## TODO
+* Metric_Hamming: add support to C-wrapper and P/Invoke.
+* Cross-platform compatibility: builds for Linux/macOS (.so/.dylib)
 
-1. Copy the compiled DLL into your Unity project:
-```
-YourUnityProject/
-└── Assets/
-    └── Plugins/
-        └── x86_64/
-            └── annoy_c.dll
-```
-
-2. Add the Annoy.cs P/Invoke wrapper to Assets/Scripts/.
-
-3. Example usage:
-```
-IntPtr index = Annoy.Index(512, AnnoyMetric.Angular);
-Annoy.AddItem(index, 0, new float[512]);
-Annoy.Build(index, 10);
-// ...
-```
+## License
+This project includes and wraps [Spotify Annoy](https://github.com/spotify/annoy), a C++ library for approximate nearest neighbors.
