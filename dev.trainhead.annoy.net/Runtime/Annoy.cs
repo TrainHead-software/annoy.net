@@ -12,7 +12,15 @@ namespace AnnoyWrapper
 
     public static class Annoy
     {
-        private const string Dll = "annoy_c";
+        #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+            private const string Dll =  "annoy_c";
+        #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+            private const string Dll =  "libannoy_c";
+        #elif UNITY_EDITOR_LINUX || UNITY_STANDALONE_LINUX || UNITY_ANDROID
+            private const string Dll =  "libannoy_c";
+        #else
+            private const string Dll =  "annoy_c";
+        #endif
 
         [DllImport(Dll)] public static extern IntPtr Index(int f, AnnoyMetric metric);
         [DllImport(Dll)] public static extern void AddItem(IntPtr handle, int item, float[] vector);
