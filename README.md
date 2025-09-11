@@ -29,26 +29,28 @@ public class Test : MonoBehaviour
 1. Clone this repository
 
 ```sh
-git clone github.com/TrainHead-software/annoy.net
+git clone https://github.com/TrainHead-software/annoy.net.git
 cd annoy.net
 ```
 
 2. Clone the Annoy source inside project folder
 
 ```sh
-git clone https://github.com/spotify/annoy.git
+git clone https://github.com/spotify/annoy.git annoy
 ```
 
-3. Build the DLL Using CMake (MinGW, Ninja, or Visual Studio):
+3. Build the native library using CMake (works on Windows, Linux, and other platforms):
 
 ```sh
-cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake -S annoy_clang -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
 ```
 
+   On Linux this generates `libannoy_c.so`, while on Windows it produces `annoy_c.dll`.
+
 ## TODO
 * Metric_Hamming: add support to C-wrapper and P/Invoke.
-* Cross-platform compatibility: builds for Linux/macOS (.so/.dylib)
+* Cross-platform compatibility: builds for macOS (.dylib)
 
 ## License
 This project includes and wraps [Spotify Annoy](https://github.com/spotify/annoy), a C++ library for approximate nearest neighbors.
