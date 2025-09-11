@@ -36,6 +36,9 @@ build/
 *.dylib
 *.exe
 
+# External Annoy source tree
+annoy/
+
 # ---- OS-specific ----
 *.swp
 *.swo
