@@ -11,11 +11,11 @@ extern "C" {
 #endif
 
 typedef enum {
-    Metric_Angular,
-    Metric_Euclidean,
-    Metric_Manhattan,
-    Metric_DotProduct,
-    //Metric_Hamming
+    Metric_Angular = 0,
+    Metric_Euclidean = 1,
+    Metric_Manhattan = 2,
+    Metric_DotProduct = 3,
+    Metric_Hamming = 4
 } AnnoyMetric;
 
 typedef void* AnnoyIndexHandle;

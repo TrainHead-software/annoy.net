@@ -30,7 +30,7 @@ int main() {
     Save(a, "test.tree");
 
     // b = AnnoyIndex(3)
-    AnnoyIndexHandle b = Index(3, Metric_Angular);
+    AnnoyIndexHandle b = Index(3, Metric_Hamming);
 
     // b.load("test.tree")
     Load(b, "test.tree");

@@ -13,16 +13,16 @@ typedef AnnoyIndex<int, float, Angular, Kiss32Random, AnnoyIndexSingleThreadedBu
 typedef AnnoyIndex<int, float, Euclidean, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy> EuclideanAnnoyIndexType;
 typedef AnnoyIndex<int, float, Manhattan, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy> ManhattanAnnoyIndexType;
 typedef AnnoyIndex<int, float, DotProduct, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy> DotProductAnnoyIndexType;
-//typedef AnnoyIndex<int, float, Hamming, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy> HammingAnnoyIndexType;
+typedef AnnoyIndex<int, int, Hamming, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy> HammingAnnoyIndexType;
 
 extern "C" {
-
     AnnoyIndexHandle Index(int f, AnnoyMetric metric) {
         switch (metric) {
             case Metric_Angular:   return new AngularAnnoyIndexType(f);
             case Metric_Euclidean: return new EuclideanAnnoyIndexType(f);
             case Metric_Manhattan: return new ManhattanAnnoyIndexType(f);
             case Metric_DotProduct:return new DotProductAnnoyIndexType(f);
+            case Metric_Hamming:   return new HammingAnnoyIndexType(f);
             default: return nullptr;
         }
     }
