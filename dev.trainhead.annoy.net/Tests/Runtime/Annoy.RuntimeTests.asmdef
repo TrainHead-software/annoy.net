@@ -1,0 +1,19 @@
+{
+    "name": "dev.trainhead.annoy.net.tests.runtime",
+    "rootNamespace": "AnnoyWrapper.Tests",
+    "references": [
+        "dev.trainhead.annoy.net"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

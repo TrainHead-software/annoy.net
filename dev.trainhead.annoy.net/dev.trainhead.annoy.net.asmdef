@@ -2,10 +2,7 @@
     "name": "dev.trainhead.annoy.net",
     "rootNamespace": "AnnoyWrapper",
     "references": [],
-    "includePlatforms": [
-        "Editor",
-        "WindowsStandalone64"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

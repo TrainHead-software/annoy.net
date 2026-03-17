@@ -41,6 +41,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
       - name: Checkout spotify/annoy into ./annoy
         uses: actions/checkout@v4
         with:
@@ -95,6 +100,13 @@ jobs:
 
           & ctest @args
 
+      - name: Run managed smoke tests
+        shell: pwsh
+        run: |
+          $env:ANNOY_NATIVE_LIBRARY_PATH = Join-Path $pwd "${{ matrix.platform.library_path }}"
+          dotnet build tests/Annoy.ManagedSmoke/Annoy.ManagedSmoke.csproj
+          dotnet run --project tests/Annoy.ManagedSmoke/Annoy.ManagedSmoke.csproj
+
       - name: Stage release asset
         shell: pwsh
         run: |
@@ -108,13 +120,49 @@ jobs:
           if-no-files-found: error
           path: dist/${{ matrix.platform.release_asset_name }}
 
+  package-unity:
+    name: Package Unity asset
+    needs: build-native
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Download native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Build unitypackage
+        shell: pwsh
+        run: |
+          ./scripts/New-UnityPackage.ps1 `
+            -OutputPath "dist/annoy.net.unitypackage" `
+            -PackageRoot "dev.trainhead.annoy.net" `
+            -WindowsLibrary "release-assets/windows-x64/annoy_c-windows-x64.dll" `
+            -LinuxLibrary "release-assets/linux-x64/libannoy_c-linux-x64.so" `
+            -MacLibrary "release-assets/macos-x64/libannoy_c-macos-x64.dylib"
+
+      - name: Upload unitypackage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unitypackage
+          if-no-files-found: error
+          path: dist/annoy.net.unitypackage
+
   publish-release-assets:
     name: Publish release assets
-    needs: build-native
+    needs:
+      - build-native
+      - package-unity
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-24.04
 
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
       - name: Download native artifacts
         uses: actions/download-artifact@v4
         with:
@@ -129,3 +177,4 @@ jobs:
             release-assets/**/*.dll
             release-assets/**/*.so
             release-assets/**/*.dylib
+            release-assets/**/*.unitypackage

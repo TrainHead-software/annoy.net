@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <PackageId>Annoy.Net</PackageId>
+    <Title>Annoy.NET</Title>
+    <Authors>Mark Tamarov</Authors>
+    <Description>Cross-platform C# wrapper for Spotify Annoy.</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/TrainHead-software/annoy.net</RepositoryUrl>
+    <PackageTags>annoy;nearest-neighbor-search;unity</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\dev.trainhead.annoy.net\Runtime\Annoy.cs" Link="Annoy.cs" />
+  </ItemGroup>
+</Project>
