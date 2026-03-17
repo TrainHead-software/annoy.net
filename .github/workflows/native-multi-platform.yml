@@ -196,9 +196,12 @@ jobs:
         shell: pwsh
         run: |
           $restorePackagesPath = "$pwd/.nuget-packages"
+          $localPackageSource = "$pwd/dist/nuget"
+          $publicPackageSource = "https://api.nuget.org/v3/index.json"
 
           dotnet restore tests/Annoy.NuGetSmoke/Annoy.NuGetSmoke.csproj `
-            --source "$pwd/dist/nuget" `
+            --source $localPackageSource `
+            --source $publicPackageSource `
             -p:AnnoyPackageVersion="${{ env.ANNOY_PACKAGE_VERSION }}" `
             -p:RestorePackagesPath=$restorePackagesPath
 
