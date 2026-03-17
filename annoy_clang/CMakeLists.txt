@@ -23,6 +23,7 @@ function(add_annoy_wrapper_test test_name)
     add_executable(${test_name} test/${test_name}.c)
     target_link_libraries(${test_name} annoy_c)
     add_test(NAME ${test_name} COMMAND $<TARGET_FILE:${test_name}>)
+    set_tests_properties(${test_name} PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endfunction()
 
 add_annoy_wrapper_test(test_metric_enum)
