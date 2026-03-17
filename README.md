@@ -1,11 +1,20 @@
 # Annoy.NET
-*Annoy.NET* is a cross-platform C# wrapper for [Spotify's Annoy](https://github.com/spotify/annoy). It can be used from Unity today and is structured so the same managed API can later be shipped as a NuGet package.
+*Annoy.NET* is a cross-platform C# wrapper for [Spotify's Annoy](https://github.com/spotify/annoy). It can be used from Unity and from regular .NET applications through the `Annoy.Net` NuGet package.
 
-## Unity Integration
+## Unity
 1. Download `annoy.net.unitypackage` from the GitHub release assets.
 2. Import it into your Unity project.
 3. Unity will install the wrapper under `Assets/Annoy.NET`.
 4. The release `unitypackage` includes the native plugins for Windows, Linux, and macOS.
+
+## NuGet
+Install the managed wrapper and the platform-specific native library with:
+
+```sh
+dotnet add package Annoy.Net
+```
+
+The NuGet package ships native assets for `win-x64`, `linux-x64`, and `osx-x64`.
 
 ## Usage
 ```csharp
@@ -30,8 +39,9 @@ public class Test : MonoBehaviour
 
 ## Project Layout
 - `dev.trainhead.annoy.net/` contains the Unity-facing package content, samples, and Unity runtime tests.
-- `src/Annoy.Net/Annoy.Net.csproj` exposes the same managed API for non-Unity consumers and future NuGet packaging without duplicating the wrapper source.
+- `src/Annoy.Net/Annoy.Net.csproj` exposes the same managed API for non-Unity consumers and produces the `Annoy.Net` NuGet package.
 - `tests/Annoy.ManagedSmoke/` contains a cross-platform .NET smoke test that runs against the native library.
+- `tests/Annoy.NuGetSmoke/` validates the packaged `.nupkg` through a real `PackageReference`.
 
 ## Setup & Build Instructions
 1. Clone this repository
@@ -70,6 +80,14 @@ pwsh ./scripts/New-UnityPackage.ps1 -OutputPath ./dist/annoy.net.unitypackage -W
 ```
 
    Add `-LinuxLibrary` and `-MacLibrary` when those binaries are available locally. In GitHub Actions, the release workflow injects all three native libraries automatically before publishing `annoy.net.unitypackage`.
+
+6. Build the NuGet package locally:
+
+```sh
+pwsh ./scripts/New-NuGetPackage.ps1 -OutputDirectory ./dist/nuget -WindowsLibrary ./build/Release/annoy_c.dll
+```
+
+   Add `-LinuxLibrary` and `-MacLibrary` when those binaries are available locally. On tagged releases, GitHub Actions builds the `.nupkg`, attaches it to the GitHub release, and publishes it to NuGet.org when `NUGET_API_KEY` is configured.
 
 ## License
 This project includes and wraps [Spotify Annoy](https://github.com/spotify/annoy), a C++ library for approximate nearest neighbors.

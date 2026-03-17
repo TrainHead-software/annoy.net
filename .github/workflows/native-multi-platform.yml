@@ -151,11 +151,75 @@ jobs:
           if-no-files-found: error
           path: dist/annoy.net.unitypackage
 
+  package-nuget:
+    name: Package NuGet package
+    needs: build-native
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Download native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Resolve package version
+        shell: pwsh
+        run: |
+          $version = if ($env:GITHUB_REF -like "refs/tags/v*") {
+            $env:GITHUB_REF_NAME.Substring(1)
+          }
+          else {
+            "0.0.0-ci.$env:GITHUB_RUN_NUMBER"
+          }
+
+          "ANNOY_PACKAGE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build NuGet package
+        shell: pwsh
+        run: |
+          ./scripts/New-NuGetPackage.ps1 `
+            -OutputDirectory "dist/nuget" `
+            -PackageVersion "${{ env.ANNOY_PACKAGE_VERSION }}" `
+            -WindowsLibrary "release-assets/windows-x64/annoy_c-windows-x64.dll" `
+            -LinuxLibrary "release-assets/linux-x64/libannoy_c-linux-x64.so" `
+            -MacLibrary "release-assets/macos-x64/libannoy_c-macos-x64.dylib"
+
+      - name: Run NuGet smoke tests
+        shell: pwsh
+        run: |
+          $restorePackagesPath = "$pwd/.nuget-packages"
+
+          dotnet restore tests/Annoy.NuGetSmoke/Annoy.NuGetSmoke.csproj `
+            --source "$pwd/dist/nuget" `
+            -p:AnnoyPackageVersion="${{ env.ANNOY_PACKAGE_VERSION }}" `
+            -p:RestorePackagesPath=$restorePackagesPath
+
+          dotnet run --project tests/Annoy.NuGetSmoke/Annoy.NuGetSmoke.csproj `
+            --no-restore `
+            -p:AnnoyPackageVersion="${{ env.ANNOY_PACKAGE_VERSION }}" `
+            -p:RestorePackagesPath=$restorePackagesPath
+
+      - name: Upload NuGet artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          if-no-files-found: error
+          path: dist/nuget/*.nupkg
+
   publish-release-assets:
     name: Publish release assets
     needs:
       - build-native
       - package-unity
+      - package-nuget
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-24.04
 
@@ -178,3 +242,32 @@ jobs:
             release-assets/**/*.so
             release-assets/**/*.dylib
             release-assets/**/*.unitypackage
+            release-assets/**/*.nupkg
+
+  publish-nuget:
+    name: Publish NuGet package
+    needs: package-nuget
+    if: startsWith(github.ref, 'refs/tags/') && secrets.NUGET_API_KEY != ''
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Download NuGet artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-package
+          path: nuget-artifacts
+
+      - name: Publish package to NuGet.org
+        shell: pwsh
+        run: |
+          Get-ChildItem "nuget-artifacts/*.nupkg" | ForEach-Object {
+            dotnet nuget push $_.FullName `
+              --api-key "${{ secrets.NUGET_API_KEY }}" `
+              --source "https://api.nuget.org/v3/index.json" `
+              --skip-duplicate
+          }

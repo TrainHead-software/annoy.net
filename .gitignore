@@ -38,6 +38,9 @@ dist/
 *.exe
 bin/
 obj/
+.nuget-packages/
+.nuget-test-packages/
+pack.log
 
 # External Annoy source tree
 annoy/
