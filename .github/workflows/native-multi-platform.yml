@@ -29,11 +29,11 @@ jobs:
             build_config: Release
             library_path: build/libannoy_c.so
             release_asset_name: libannoy_c-linux-x64.so
-          - id: macos-x64
-            runs_on: macos-13
-            build_config: Release
-            library_path: build/libannoy_c.dylib
-            release_asset_name: libannoy_c-macos-x64.dylib
+          # - id: macos-x64
+          #   runs_on: macos-15-intel
+          #   build_config: Release
+          #   library_path: build/libannoy_c.dylib
+          #   release_asset_name: libannoy_c-macos-x64.dylib
 
     steps:
       - name: Checkout repo
@@ -141,8 +141,8 @@ jobs:
             -OutputPath "dist/annoy.net.unitypackage" `
             -PackageRoot "dev.trainhead.annoy.net" `
             -WindowsLibrary "release-assets/windows-x64/annoy_c-windows-x64.dll" `
-            -LinuxLibrary "release-assets/linux-x64/libannoy_c-linux-x64.so" `
-            -MacLibrary "release-assets/macos-x64/libannoy_c-macos-x64.dylib"
+            -LinuxLibrary "release-assets/linux-x64/libannoy_c-linux-x64.so"
+            # -MacLibrary "release-assets/macos-x64/libannoy_c-macos-x64.dylib"
 
       - name: Upload unitypackage artifact
         uses: actions/upload-artifact@v4
@@ -189,8 +189,8 @@ jobs:
             -OutputDirectory "dist/nuget" `
             -PackageVersion "${{ env.ANNOY_PACKAGE_VERSION }}" `
             -WindowsLibrary "release-assets/windows-x64/annoy_c-windows-x64.dll" `
-            -LinuxLibrary "release-assets/linux-x64/libannoy_c-linux-x64.so" `
-            -MacLibrary "release-assets/macos-x64/libannoy_c-macos-x64.dylib"
+            -LinuxLibrary "release-assets/linux-x64/libannoy_c-linux-x64.so"
+            # -MacLibrary "release-assets/macos-x64/libannoy_c-macos-x64.dylib"
 
       - name: Run NuGet smoke tests
         shell: pwsh
@@ -237,10 +237,10 @@ jobs:
         with:
           generate_release_notes: true
           fail_on_unmatched_files: true
+          # macOS artifacts are temporarily disabled in CI.
           files: |
             release-assets/**/*.dll
             release-assets/**/*.so
-            release-assets/**/*.dylib
             release-assets/**/*.unitypackage
             release-assets/**/*.nupkg
 
