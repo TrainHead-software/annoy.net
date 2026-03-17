@@ -25,6 +25,7 @@ cmake_install.cmake
 compile_commands.json
 Testing/
 build/
+dist/
 *.cbp
 *.ninja
 *.o
@@ -35,6 +36,11 @@ build/
 *.so
 *.dylib
 *.exe
+bin/
+obj/
+.nuget-packages/
+.nuget-test-packages/
+pack.log
 
 # External Annoy source tree
 annoy/

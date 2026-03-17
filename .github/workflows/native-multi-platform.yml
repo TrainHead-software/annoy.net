@@ -1,0 +1,273 @@
+name: native-multi-platform
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - "v*"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-native:
+    name: Build ${{ matrix.platform.id }}
+    runs-on: ${{ matrix.platform.runs_on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - id: windows-x64
+            runs_on: windows-2022
+            build_config: Release
+            library_path: build/Release/annoy_c.dll
+            release_asset_name: annoy_c-windows-x64.dll
+          - id: linux-x64
+            runs_on: ubuntu-24.04
+            build_config: Release
+            library_path: build/libannoy_c.so
+            release_asset_name: libannoy_c-linux-x64.so
+          - id: macos-x64
+            runs_on: macos-13
+            build_config: Release
+            library_path: build/libannoy_c.dylib
+            release_asset_name: libannoy_c-macos-x64.dylib
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Checkout spotify/annoy into ./annoy
+        uses: actions/checkout@v4
+        with:
+          repository: spotify/annoy
+          path: annoy
+          fetch-depth: 1
+
+      - name: Validate Annoy source
+        shell: pwsh
+        run: |
+          if (!(Test-Path "annoy/src/annoylib.h")) {
+            throw "Missing annoy/src/annoylib.h"
+          }
+          if (!(Test-Path "annoy/src/kissrandom.h")) {
+            throw "Missing annoy/src/kissrandom.h"
+          }
+
+      - name: Configure
+        shell: pwsh
+        run: |
+          $args = @(
+            "-S", "annoy_clang",
+            "-B", "build",
+            "-DCMAKE_BUILD_TYPE=${{ matrix.platform.build_config }}"
+          )
+
+          if ("${{ runner.os }}" -eq "Windows") {
+            $args += @("-G", "Visual Studio 17 2022", "-A", "x64")
+          }
+
+          & cmake @args
+
+      - name: Build
+        shell: pwsh
+        run: |
+          $args = @("--build", "build", "--parallel")
+
+          if ("${{ runner.os }}" -eq "Windows") {
+            $args += @("--config", "${{ matrix.platform.build_config }}")
+          }
+
+          & cmake @args
+
+      - name: Run native tests
+        shell: pwsh
+        run: |
+          $args = @("--test-dir", "build", "--output-on-failure")
+
+          if ("${{ runner.os }}" -eq "Windows") {
+            $args += @("-C", "${{ matrix.platform.build_config }}")
+          }
+
+          & ctest @args
+
+      - name: Run managed smoke tests
+        shell: pwsh
+        run: |
+          $env:ANNOY_NATIVE_LIBRARY_PATH = Join-Path $pwd "${{ matrix.platform.library_path }}"
+          dotnet build tests/Annoy.ManagedSmoke/Annoy.ManagedSmoke.csproj
+          dotnet run --project tests/Annoy.ManagedSmoke/Annoy.ManagedSmoke.csproj
+
+      - name: Stage release asset
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "dist" -Force | Out-Null
+          Copy-Item "${{ matrix.platform.library_path }}" "dist/${{ matrix.platform.release_asset_name }}"
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform.id }}
+          if-no-files-found: error
+          path: dist/${{ matrix.platform.release_asset_name }}
+
+  package-unity:
+    name: Package Unity asset
+    needs: build-native
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Download native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Build unitypackage
+        shell: pwsh
+        run: |
+          ./scripts/New-UnityPackage.ps1 `
+            -OutputPath "dist/annoy.net.unitypackage" `
+            -PackageRoot "dev.trainhead.annoy.net" `
+            -WindowsLibrary "release-assets/windows-x64/annoy_c-windows-x64.dll" `
+            -LinuxLibrary "release-assets/linux-x64/libannoy_c-linux-x64.so" `
+            -MacLibrary "release-assets/macos-x64/libannoy_c-macos-x64.dylib"
+
+      - name: Upload unitypackage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unitypackage
+          if-no-files-found: error
+          path: dist/annoy.net.unitypackage
+
+  package-nuget:
+    name: Package NuGet package
+    needs: build-native
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Download native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Resolve package version
+        shell: pwsh
+        run: |
+          $version = if ($env:GITHUB_REF -like "refs/tags/v*") {
+            $env:GITHUB_REF_NAME.Substring(1)
+          }
+          else {
+            "0.0.0-ci.$env:GITHUB_RUN_NUMBER"
+          }
+
+          "ANNOY_PACKAGE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build NuGet package
+        shell: pwsh
+        run: |
+          ./scripts/New-NuGetPackage.ps1 `
+            -OutputDirectory "dist/nuget" `
+            -PackageVersion "${{ env.ANNOY_PACKAGE_VERSION }}" `
+            -WindowsLibrary "release-assets/windows-x64/annoy_c-windows-x64.dll" `
+            -LinuxLibrary "release-assets/linux-x64/libannoy_c-linux-x64.so" `
+            -MacLibrary "release-assets/macos-x64/libannoy_c-macos-x64.dylib"
+
+      - name: Run NuGet smoke tests
+        shell: pwsh
+        run: |
+          $restorePackagesPath = "$pwd/.nuget-packages"
+
+          dotnet restore tests/Annoy.NuGetSmoke/Annoy.NuGetSmoke.csproj `
+            --source "$pwd/dist/nuget" `
+            -p:AnnoyPackageVersion="${{ env.ANNOY_PACKAGE_VERSION }}" `
+            -p:RestorePackagesPath=$restorePackagesPath
+
+          dotnet run --project tests/Annoy.NuGetSmoke/Annoy.NuGetSmoke.csproj `
+            --no-restore `
+            -p:AnnoyPackageVersion="${{ env.ANNOY_PACKAGE_VERSION }}" `
+            -p:RestorePackagesPath=$restorePackagesPath
+
+      - name: Upload NuGet artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          if-no-files-found: error
+          path: dist/nuget/*.nupkg
+
+  publish-release-assets:
+    name: Publish release assets
+    needs:
+      - build-native
+      - package-unity
+      - package-nuget
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Download native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Create or update GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            release-assets/**/*.dll
+            release-assets/**/*.so
+            release-assets/**/*.dylib
+            release-assets/**/*.unitypackage
+            release-assets/**/*.nupkg
+
+  publish-nuget:
+    name: Publish NuGet package
+    needs: package-nuget
+    if: startsWith(github.ref, 'refs/tags/') && secrets.NUGET_API_KEY != ''
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Download NuGet artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-package
+          path: nuget-artifacts
+
+      - name: Publish package to NuGet.org
+        shell: pwsh
+        run: |
+          Get-ChildItem "nuget-artifacts/*.nupkg" | ForEach-Object {
+            dotnet nuget push $_.FullName `
+              --api-key "${{ secrets.NUGET_API_KEY }}" `
+              --source "https://api.nuget.org/v3/index.json" `
+              --skip-duplicate
+          }
