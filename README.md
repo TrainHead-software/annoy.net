@@ -5,7 +5,7 @@
 1. Download `annoy.net.unitypackage` from the GitHub release assets.
 2. Import it into your Unity project.
 3. Unity will install the wrapper under `Assets/Annoy.NET`.
-4. The release `unitypackage` includes the native plugins for Windows, Linux, and macOS.
+4. The release `unitypackage` includes the native plugins for Windows, Linux, and ~~macOS~~.
 
 ## NuGet
 Install the managed wrapper and the platform-specific native library with:
@@ -14,7 +14,7 @@ Install the managed wrapper and the platform-specific native library with:
 dotnet add package Annoy.Net
 ```
 
-The NuGet package ships native assets for `win-x64`, `linux-x64`, and `osx-x64`.
+The NuGet package ships native assets for `win-x64`, `linux-x64`, and ~~`osx-x64`~~.
 
 ## Usage
 ```csharp
@@ -64,7 +64,7 @@ cmake -S annoy_clang -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
 ```
 
-   This produces `annoy_c.dll` on Windows, `libannoy_c.so` on Linux, and `libannoy_c.dylib` on macOS.
+   This produces `annoy_c.dll` on Windows, `libannoy_c.so` on Linux ~~, and `libannoy_c.dylib` on macOS~~.
 
 4. Run the native and managed smoke tests:
 
@@ -79,7 +79,7 @@ dotnet run --project tests/Annoy.ManagedSmoke/Annoy.ManagedSmoke.csproj
 pwsh ./scripts/New-UnityPackage.ps1 -OutputPath ./dist/annoy.net.unitypackage -WindowsLibrary ./build/Release/annoy_c.dll
 ```
 
-   Add `-LinuxLibrary` and `-MacLibrary` when those binaries are available locally. In GitHub Actions, the release workflow injects all three native libraries automatically before publishing `annoy.net.unitypackage`.
+   Add `-LinuxLibrary` and `-MacLibrary` when those binaries are available locally. In GitHub Actions, the release workflow injects all native libraries automatically before publishing `annoy.net.unitypackage`.
 
 6. Build the NuGet package locally:
 
@@ -87,7 +87,7 @@ pwsh ./scripts/New-UnityPackage.ps1 -OutputPath ./dist/annoy.net.unitypackage -W
 pwsh ./scripts/New-NuGetPackage.ps1 -OutputDirectory ./dist/nuget -WindowsLibrary ./build/Release/annoy_c.dll
 ```
 
-   Add `-LinuxLibrary` and `-MacLibrary` when those binaries are available locally. On tagged releases, GitHub Actions builds the `.nupkg`, attaches it to the GitHub release, and publishes it to NuGet.org when `NUGET_API_KEY` is configured.
+   Add `-LinuxLibrary` and `-MacLibrary` when those binaries are available locally.
 
 ## License
 This project includes and wraps [Spotify Annoy](https://github.com/spotify/annoy), a C++ library for approximate nearest neighbors.
